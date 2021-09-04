@@ -2,6 +2,9 @@ import arxiv
 import gzip
 import json
 import os
+from tqdm import tqdm
+
+from utils import mkdir_p
 
 # ______________________________________________________________________________________________________ ||
 def parse_arguments():
@@ -34,15 +37,24 @@ def download_uncompress_source_files(arxiv_id,out_dir='./',verbose=True):
     gunzip(targz_path,tar_path)
     untar(tar_path,out_dir)
 
-def read_meta_json(json_path):
-    f = open(json_path,)
-    data = json.load(f)
-    print(len(data))
+def get_metadata(json_path):
+    with open(json_path) as f:
+        for line in f:
+            yield line
+
+def read_meta_json(json_path,out_dir):
+    metadata = get_metadata(json_path)
+    for ind, paper in tqdm(enumerate(metadata)):
+        paper = json.loads(paper)
+        id_str = str(paper['id'])
+        id_out_dir = os.path.join(out_dir,id_str)
+        mkdir_p(id_out_dir)
+        download_uncompress_source_files(id_str,id_out_dir)
 
 if __name__ == "__main__":
     args = parse_arguments()
     if args.id:
         download_uncompress_source_files(args.id,args.out_dir)
     elif args.json:
-        read_meta_json(args.json)
+        read_meta_json(args.json,args.out_dir)
         
